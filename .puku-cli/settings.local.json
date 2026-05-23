@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(curl:*)",
+      "Bash(python3 -c \"import sys,json; print\\(json.load\\(sys.stdin\\)[''''status'''']\\)\" echo \"\" echo \"=== Webhook Endpoint ===\" curl -s http://localhost:3002/api/webhook/github echo \"\")"
+    ]
+  }
+}
