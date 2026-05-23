@@ -4,8 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
-import ActivityCard from '@/components/ActivityCard'
-import { GitBranch, GitPullRequest, CircleDot, Folder } from 'lucide-react'
+import {
+  GitBranch,
+  GitPullRequest,
+  CircleDot,
+  Folder,
+  ExternalLink,
+} from 'lucide-react'
 
 async function getActivities(orgId: string) {
   return prisma.activity.findMany({
@@ -39,239 +44,140 @@ export default async function DashboardPage() {
     getStats(session.user.orgId),
   ])
 
+  const statCards = [
+    { label: 'Total Activities', value: stats.totalActivities, icon: CircleDot, color: 'blue' },
+    { label: 'Push Events', value: stats.pushCount, icon: GitBranch, color: 'green' },
+    { label: 'Pull Requests', value: stats.prCount, icon: GitPullRequest, color: 'purple' },
+    { label: 'Repositories', value: stats.repoCount, icon: Folder, color: 'orange' },
+  ]
+
   return (
-    <div className="dashboard-page">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navbar />
 
-      <main className="dashboard-main">
+      <main className="mx-auto max-w-5xl px-6 pb-16 pt-24">
         {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-content">
-            <h1 className="header-title">Dashboard</h1>
-            <p className="header-subtitle">
-              Welcome back, {session.user.name || session.user.email}
-            </p>
-          </div>
+        <header className="mb-10">
+          <h1 className="mb-2 text-3xl font-bold">Dashboard</h1>
+          <p className="text-zinc-400">
+            Welcome back, {session.user.name || session.user.email}
+          </p>
         </header>
 
         {/* Stats Grid */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <CircleDot size={20} />
+        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((stat, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-lg border border-[#262626] bg-[#111] p-5"
+            >
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+                  stat.color === 'blue'
+                    ? 'bg-blue-500/10 text-blue-400'
+                    : stat.color === 'green'
+                    ? 'bg-green-500/10 text-green-400'
+                    : stat.color === 'purple'
+                    ? 'bg-purple-500/10 text-purple-400'
+                    : 'bg-orange-500/10 text-orange-400'
+                }`}
+              >
+                <stat.icon size={20} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold">{stat.value}</span>
+                <span className="text-sm text-zinc-500">{stat.label}</span>
+              </div>
             </div>
-            <div className="stat-info">
-              <span className="stat-value">{stats.totalActivities}</span>
-              <span className="stat-label">Total Activities</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon green">
-              <GitBranch size={20} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">{stats.pushCount}</span>
-              <span className="stat-label">Push Events</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon purple">
-              <GitPullRequest size={20} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">{stats.prCount}</span>
-              <span className="stat-label">Pull Requests</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon orange">
-              <Folder size={20} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">{stats.repoCount}</span>
-              <span className="stat-label">Repositories</span>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Activity Feed */}
-        <div className="activity-section">
-          <div className="section-header">
-            <h2 className="section-title">Recent Activity</h2>
-            <Link href="/dashboard/activities" className="section-link">
+        <div className="overflow-hidden rounded-lg border border-[#262626] bg-[#111]">
+          <div className="flex items-center justify-between border-b border-[#262626] px-6 py-4">
+            <h2 className="text-lg font-semibold">Recent Activity</h2>
+            <Link href="/dashboard/activities" className="text-sm text-blue-400 hover:underline">
               View all →
             </Link>
           </div>
 
           {activities.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📭</div>
-              <h3 className="empty-title">No activities yet</h3>
-              <p className="empty-description">
+            <div className="flex flex-col items-center py-16 text-center">
+              <div className="mb-4 text-5xl">📭</div>
+              <h3 className="mb-2 text-lg font-semibold">No activities yet</h3>
+              <p className="mb-6 text-zinc-400">
                 Set up your webhook in Settings to start tracking GitHub events.
               </p>
-              <Link href="/dashboard/settings" className="btn btn-primary">
+              <Link
+                href="/dashboard/settings"
+                className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+              >
                 Setup Webhook
               </Link>
             </div>
           ) : (
-            <div className="activity-list">
-              {activities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
+            <div className="divide-y divide-[#262626]">
+              {activities.slice(0, 5).map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-start gap-4 px-6 py-4 hover:bg-[#1a1a1a]"
+                >
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                      activity.type === 'push'
+                        ? 'bg-green-500/10 text-green-400'
+                        : activity.type === 'pull_request'
+                        ? 'bg-purple-500/10 text-purple-400'
+                        : 'bg-orange-500/10 text-orange-400'
+                    }`}
+                  >
+                    {activity.type === 'push' ? (
+                      <GitBranch size={16} />
+                    ) : activity.type === 'pull_request' ? (
+                      <GitPullRequest size={16} />
+                    ) : (
+                      <CircleDot size={16} />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="font-medium">{activity.repoName}</span>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                          activity.type === 'push'
+                            ? 'bg-green-500/10 text-green-400'
+                            : activity.type === 'pull_request'
+                            ? 'bg-purple-500/10 text-purple-400'
+                            : 'bg-orange-500/10 text-orange-400'
+                        }`}
+                      >
+                        {activity.type === 'pull_request' ? 'PR' : activity.type}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-zinc-400">
+                      <span>{activity.actor}</span>
+                      {activity.branch && (
+                        <span className="flex items-center gap-1 rounded bg-[#262626] px-1.5 py-0.5 text-xs font-mono">
+                          <GitBranch size={10} />
+                          {activity.branch}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-zinc-500">
+                    {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
               ))}
             </div>
           )}
         </div>
       </main>
-
-      <style jsx>{`
-        .dashboard-page {
-          min-height: 100vh;
-          background: var(--bg-primary);
-        }
-
-        .dashboard-main {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: calc(60px + var(--space-2xl)) var(--space-lg) var(--space-2xl);
-        }
-
-        /* Header */
-        .dashboard-header {
-          margin-bottom: var(--space-2xl);
-        }
-
-        .header-title {
-          font-size: var(--font-3xl);
-          font-weight: 700;
-          margin-bottom: var(--space-xs);
-        }
-
-        .header-subtitle {
-          font-size: var(--font-base);
-          color: var(--text-secondary);
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: var(--space-md);
-          margin-bottom: var(--space-2xl);
-        }
-
-        .stat-card {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-          padding: var(--space-lg);
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-lg);
-        }
-
-        .stat-icon {
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(59, 130, 246, 0.15);
-          color: var(--accent-blue);
-          border-radius: var(--radius-md);
-        }
-
-        .stat-icon.green {
-          background: rgba(34, 197, 94, 0.15);
-          color: var(--accent-green);
-        }
-
-        .stat-icon.purple {
-          background: rgba(168, 85, 247, 0.15);
-          color: var(--accent-purple);
-        }
-
-        .stat-icon.orange {
-          background: rgba(249, 115, 22, 0.15);
-          color: var(--accent-orange);
-        }
-
-        .stat-info {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .stat-value {
-          font-size: var(--font-2xl);
-          font-weight: 700;
-        }
-
-        .stat-label {
-          font-size: var(--font-sm);
-          color: var(--text-secondary);
-        }
-
-        /* Activity Section */
-        .activity-section {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-lg);
-          overflow: hidden;
-        }
-
-        .section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: var(--space-lg);
-          border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .section-title {
-          font-size: var(--font-lg);
-          font-weight: 600;
-        }
-
-        .section-link {
-          font-size: var(--font-sm);
-          color: var(--accent-blue);
-        }
-
-        .section-link:hover {
-          text-decoration: underline;
-        }
-
-        /* Empty State */
-        .empty-state {
-          padding: var(--space-3xl);
-          text-align: center;
-        }
-
-        .empty-icon {
-          font-size: 48px;
-          margin-bottom: var(--space-md);
-        }
-
-        .empty-title {
-          font-size: var(--font-lg);
-          font-weight: 600;
-          margin-bottom: var(--space-sm);
-        }
-
-        .empty-description {
-          font-size: var(--font-base);
-          color: var(--text-secondary);
-          margin-bottom: var(--space-lg);
-        }
-
-        /* Activity List */
-        .activity-list {
-          divide-y: 1px solid var(--border-subtle);
-        }
-      `}</style>
     </div>
   )
 }
