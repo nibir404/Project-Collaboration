@@ -1,0 +1,138 @@
+// Prisma schema - SQLite for development, PostgreSQL for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// Models
+// ========================================
+
+model Organization {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  githubOrgId   String?     @unique
+  webhookSecret String?    @unique
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  users         User[]
+  activities    Activity[]
+  repositories  Repository[]
+  webhookEvents WebhookEvent[]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name         String?
+  image        String?
+  githubUserId String?   @unique
+  role         String    @default("member")
+  orgId        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  organization Organization? @relation(fields: [orgId], references: [id])
+  accounts    Account[]
+  sessions    Session[]
+}
+
+model Repository {
+  id            String      @id @default(cuid())
+  name          String
+  fullName      String      @unique
+  githubRepoId  String      @unique
+  orgId         String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  activities   Activity[]
+}
+
+model Activity {
+  id            String    @id @default(cuid())
+  type          String
+  action       String?
+  repoName     String
+  actor        String
+  actorAvatar  String?
+  commitSha    String?
+  branch       String?
+  payload     String?
+  orgId        String
+  repoId       String?
+  deliveryId   String?
+  createdAt    DateTime  @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  repository  Repository?    @relation(fields: [repoId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([orgId, type])
+  @@index([deliveryId])
+  @@index([type])
+}
+
+model WebhookEvent {
+  id            String    @id @default(cuid())
+  orgId         String
+  eventType     String
+  deliveryId   String?
+  payload      String
+  processed    Boolean   @default(false)
+  error        String?
+  createdAt   DateTime  @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id])
+
+  @@index([orgId])
+  @@index([eventType])
+  @@index([deliveryId])
+}
+
+// ========================================
+// NextAuth Models
+// ========================================
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token      String?
+  expires_at        Int?
+  token_type       String?
+  scope            String?
+  id_token         String?
+  session_state   String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires     DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
