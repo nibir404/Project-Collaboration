@@ -10,6 +10,9 @@ export function verifyGitHubWebhook(
   const hmac = crypto.createHmac('sha256', secret)
   const digest = 'sha256=' + hmac.update(payload).digest('hex')
 
+  // timingSafeEqual requires same length buffers
+  if (signature.length !== digest.length) return false
+
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))
 }
 
